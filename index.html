@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpectralView - OceanOptics Reflection Spectrometry Visualizer</title>
+    <meta name="description" content="Visualizza, confronta ed esporta i tuoi dati spettroscopici OceanOptics .Reflection con un'interfaccia interattiva, moderna e reattiva in modalità Light e Dark.">
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Librerie Core caricate via CDN affidabile -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- SIDEBAR SINISTRA: Gestione Campioni & File -->
+        <aside class="sidebar" aria-label="Gestione Campioni e Caricamento">
+            
+            <div class="app-header">
+                <div class="app-title-group">
+                    <!-- Icona Spettro (Grafico a Linee Cartesiano) -->
+                    <svg class="app-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3v18h18"/>
+                        <path d="m19 9-5 5-4-4-3 3"/>
+                    </svg>
+                    <h1 class="app-title" id="app-heading-title">SpectralView</h1>
+                </div>
+                
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <!-- Bottone cambio Tema -->
+                    <button id="theme-toggle" class="theme-toggle-btn" title="Cambia tema Light/Dark" aria-label="Attiva modalità chiara">
+                        <!-- Icona Sole -->
+                        <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="4"/>
+                            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                        </svg>
+                        <!-- Icona Luna (Nascondiamo inizialmente via JS/CSS o le alterniamo) -->
+                        <svg class="moon-icon" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+                        </svg>
+                    </button>
+                    <!-- Bottone Mostra/Nascondi Barra Laterale (Posizionato nel menu di intestazione) -->
+                    <button id="toggle-sidebar-btn" class="theme-toggle-btn" title="Nascondi barra laterale" aria-label="Nascondi barra laterale">
+                        <svg id="sidebar-toggle-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px; vertical-align: middle;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Area Upload Dropzone -->
+            <div class="upload-container">
+                <div id="dropzone" class="dropzone" aria-label="Trascina qui i tuoi file di spettrometria">
+                    <!-- Icona Cloud Upload -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 0 1-.88-7.903A5 5 0 1 1 15.9 6L16 6a5 5 0 0 1 1 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p>Trascina i file .Reflection qui</p>
+                    <span>Oppure clicca per sfogliare</span>
+                    <input type="file" id="file-input" accept=".Reflection" multiple style="display: none;">
+                </div>
+            </div>
+
+            <!-- Sezione Limiti Assi (X e Y) -->
+            <div class="axis-limits-section">
+                <span class="section-label">Limiti Assi Grafico</span>
+                
+                <div class="axis-limits-grid">
+                    <!-- Asse X (Wavelength) -->
+                    <div class="axis-limit-col">
+                        <span class="axis-limit-label">Asse X (nm)</span>
+                        <div class="axis-limit-inputs">
+                            <input type="number" id="x-min-input" class="limit-input" placeholder="Min" value="200" step="any" aria-label="Valore minimo asse X (nm)">
+                            <span style="font-size: 10px; color: var(--text-muted);">-</span>
+                            <input type="number" id="x-max-input" class="limit-input" placeholder="Max" value="1100" step="any" aria-label="Valore massimo asse X (nm)">
+                        </div>
+                    </div>
+                    <!-- Asse Y (Reflectance) -->
+                    <div class="axis-limit-col">
+                        <span class="axis-limit-label">Asse Y (%)</span>
+                        <div class="axis-limit-inputs">
+                            <input type="number" id="y-min-input" class="limit-input" placeholder="Min" value="0" step="any" aria-label="Valore minimo asse Y (%)">
+                            <span style="font-size: 10px; color: var(--text-muted);">-</span>
+                            <input type="number" id="y-max-input" class="limit-input" placeholder="Max" value="110" step="any" aria-label="Valore massimo asse Y (%)">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sidebar-export-buttons" style="margin-top: 4px;">
+                    <button id="apply-limits-btn" class="btn" style="padding: 4px 8px; font-size: 11px; height: 26px;" title="Applica i limiti inseriti agli assi del grafico">Applica</button>
+                    <button id="clear-limits-btn" class="btn" style="padding: 4px 8px; font-size: 11px; height: 26px;" title="Azzera i limiti e torna alla scala automatica del grafico">Azzera</button>
+                </div>
+            </div>
+
+            <!-- Lista Campioni Caricati -->
+            <div class="samples-section">
+                <div class="samples-header-row">
+                    <span class="section-label">Campioni Caricati</span>
+                    <span id="samples-count" class="samples-count">0</span>
+                </div>
+                
+                <div id="samples-list" class="samples-list">
+                    <!-- Caso vuoto predefinito -->
+                    <div id="no-samples-view" class="no-samples">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z" />
+                        </svg>
+                        <p>Nessun campione caricato.<br>Carica uno o più file .Reflection per visualizzare e confrontare gli spettri.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sezione Esportazione integrata nella Sidebar -->
+            <div class="sidebar-export-section">
+                <span class="sidebar-export-label">Esporta campioni selezionati</span>
+                <div class="sidebar-export-buttons">
+                    <!-- Esporta CSV -->
+                    <button id="export-csv-btn" class="btn" title="Scarica file CSV con tutti i dati allineati" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        CSV
+                    </button>
+                    <!-- Esporta Excel -->
+                    <button id="export-xlsx-btn" class="btn btn-primary" title="Scarica cartella Excel con dati spettrali e metadati" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
+                        </svg>
+                        Excel
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- AREA PRINCIPALE DESTRA: Grafico & Esportazione -->
+        <main class="main-content">
+            
+            <!-- Pannello grafico -->
+            <div class="chart-panel">
+                
+                <div class="chart-toolbar">
+                    <div class="chart-title-container">
+                        <span class="chart-title">Analisi Spettrale Comparativa</span>
+                    </div>
+                    
+                    <div class="toolbar-group">
+                        <!-- Interruttore Griglia -->
+                        <div class="toggle-switch-wrapper">
+                            <span>Griglia</span>
+                            <label class="switch" title="Mostra/Nascondi griglia del grafico">
+                                <input type="checkbox" id="grid-toggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <!-- Interruttore Legenda -->
+                        <div class="toggle-switch-wrapper" style="margin-right: 8px;">
+                            <span>Legenda</span>
+                            <label class="switch" title="Mostra/Nascondi legenda del grafico">
+                                <input type="checkbox" id="legend-toggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <!-- Reset Zoom -->
+                        <button id="reset-zoom-btn" class="btn" title="Ripristina visualizzazione originale del grafico">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                                <polyline points="3 3 3 8 8 8" />
+                            </svg>
+                            Reset Zoom
+                        </button>
+                        
+                        <!-- Cattura Immagine -->
+                        <button id="capture-chart-btn" class="btn" title="Esporta l'immagine PNG del grafico corrente">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 0 1 2.828 0L16 16m-2-2l1.586-1.586a2 2 0 0 1 2.828 0L20 14m-6-6h.01M6 20h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
+                            </svg>
+                            Salva PNG
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas del grafico -->
+                <div class="chart-wrapper">
+                    <canvas id="spectral-chart" aria-label="Grafico interattivo delle riflettanze degli spettrometri OceanOptics" role="img"></canvas>
+                </div>
+
+            </div>
+
+            <!-- Nota: Barra di esportazione spostata con successo nella sidebar sinistra -->
+
+        </main>
+
+    </div>
+
+    <!-- MODAL DI DETTAGLIO METADATI -->
+    <div id="metadata-modal" class="modal-overlay" aria-hidden="true" role="dialog" aria-labelledby="modal-title-text">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title-text" class="modal-title">Metadati del Campione</h2>
+                <button id="modal-close-btn" class="modal-close" aria-label="Chiudi finestra modale">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="metadata-modal-grid" class="metadata-grid">
+                    <!-- Popolato dinamicamente via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script di logica principale dell'applicazione (non-module per supporto file:// offline) -->
+    <script src="js/parser.js"></script>
+    <script src="js/chart-manager.js"></script>
+    <script src="js/exporter.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
