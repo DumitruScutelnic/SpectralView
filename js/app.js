@@ -254,11 +254,11 @@ function handleFiles(files) {
     const filesArray = Array.from(files);
     const reflectionFiles = filesArray.filter(file => {
         const extension = file.name.split('.').pop().toLowerCase();
-        return extension === 'reflection';
+        return extension === 'reflection' || extension === 'csv';
     });
 
     if (reflectionFiles.length === 0 && filesArray.length > 0) {
-        alert("Nessun file valido rilevato. Trascina solo file con estensione '.Reflection'.");
+        alert("Nessun file valido rilevato. Trascina file '.Reflection' (OceanOptics) o '.CSV' (Zeiss).");
         return;
     }
 
@@ -270,7 +270,10 @@ function handleFiles(files) {
         reader.onload = function(event) {
             try {
                 const text = event.target.result;
-                const spectrum = parseReflectionFile(text, file.name);
+                const ext = file.name.split('.').pop().toLowerCase();
+                const spectrum = ext === 'csv'
+                    ? parseZeissCSV(text, file.name)
+                    : parseReflectionFile(text, file.name);
                 
                 // Assegna caratteristiche grafiche predefinite al nuovo campione
                 spectrum.color = defaultColors[colorIndex % defaultColors.length];
