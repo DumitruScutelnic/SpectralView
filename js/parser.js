@@ -9,11 +9,10 @@ function parseReflectionFile(fileText, fileName) {
     const metadata = {};
     const dataPoints = [];
     let isSpectralDataSection = false;
-    let headerSkipped = false;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        
+
         // Salta righe vuote prima della sezione dati
         if (!line && !isSpectralDataSection) continue;
 
@@ -29,7 +28,7 @@ function parseReflectionFile(fileText, fileName) {
             if (colonIdx !== -1) {
                 const key = line.substring(0, colonIdx).trim();
                 const value = line.substring(colonIdx + 1).trim();
-                
+
                 // Normalizza o formatta chiavi note se necessario
                 metadata[key] = value;
             } else if (line) {
@@ -37,24 +36,19 @@ function parseReflectionFile(fileText, fileName) {
                 metadata[`Info_${i}`] = line;
             }
         } else {
-            // Parsing della tabella dati (Lunghezza d'onda, Riflettanza)
-            // La prima riga dopo l'inizio è l'intestazione delle colonne (es: Wavelenght (nm),Reflectance (%))
-            if (!headerSkipped) {
-                headerSkipped = true;
-                continue;
-            }
-
             if (!line) continue;
 
-            const parts = line.split(',');
-            if (parts.length >= 1) {
+            // Supporta sia tab (formato OceanOptics nativo) che virgola
+            const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+            if (parts.length >= 2) {
                 const wlStr = parts[0].trim();
-                const refStr = parts[1] ? parts[1].trim() : '';
+                const refStr = parts[1].trim();
 
-                // Gestione dei valori mancanti, vuoti o non validi
-                if (wlStr === '' || refStr === '') {
-                    continue; // salta la riga se manca uno dei due dati
-                }
+                // Salta righe di intestazione testuali (es. "Wavelength\tIntensity")
+                if (isNaN(parseFloat(wlStr))) continue;
+
+                // Gestione dei valori mancanti o vuoti
+                if (wlStr === '' || refStr === '') continue;
 
                 // Gestione specifica per valori infiniti -inf, inf
                 if (refStr.toLowerCase() === '-inf' || refStr.toLowerCase() === 'inf' || refStr.toLowerCase() === '+inf') {

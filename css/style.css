@@ -279,10 +279,9 @@ body {
 
 /* Lista dei campioni */
 .samples-section {
-    flex-grow: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    margin-bottom: 20px;
 }
 
 .samples-header-row {
@@ -311,8 +310,6 @@ body {
 }
 
 .samples-list {
-    flex-grow: 1;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -721,7 +718,7 @@ input:checked + .slider:before {
 
 /* Sezione Esportazione in Sidebar */
 .sidebar-export-section {
-    margin-top: auto;
+    margin-top: 24px;
     padding-top: 18px;
     border-top: 1px solid var(--border-color);
     display: flex;
@@ -758,6 +755,51 @@ input:checked + .slider:before {
     flex: 1;
     padding: 8px 10px;
     font-size: 12px;
+}
+
+/* Sezione Partner Loghi in Sidebar */
+.sidebar-logos-section {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: opacity 0.25s ease, padding 0.35s ease;
+}
+
+.sidebar-collapsed .sidebar-logos-section {
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+    height: 0;
+    overflow: hidden;
+    border: none;
+}
+
+.sidebar-logos-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #ffffff; /* Sempre bianco per garantire massima leggibilità dei loghi */
+    border: 1px solid rgba(39, 39, 42, 0.08); /* Bordo chiaro fisso */
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.partner-logo {
+    max-height: 48px;
+    width: auto;
+    max-width: 47%;
+    object-fit: contain;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.partner-logo:hover {
+    transform: scale(1.04);
 }
 
 /* Modal per i Metadati */
